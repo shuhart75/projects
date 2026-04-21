@@ -1,0 +1,164 @@
+openapi: 3.1.0
+info:
+  title: AI Simulations Agent API
+  version: 1.0.0
+  description: API для взаимодействия с AI-агентом RAIN для симуляций в продуктах банка
+
+servers:
+  - url: https://api.example.com/v1
+    description: Продакшен сервер
+
+paths:
+  /dialog/init:
+    post:
+      summary: Инициализация диалога с агентом
+      description: Передача контекста симуляции для запуска AI-агента. Это начало сессии, не запуск самой симуляции.
+      operationId: initDialog
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DialogInitRequest'
+      responses:
+        '200':
+          description: Ответ AI-агента с результатом инициализации
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DialogResponse'
+        '400':
+          description: Невалидный запрос
+        '500':
+          description: Внутренняя ошибка сервера
+
+  /dialog/{sessionId}/continue:
+    post:
+      summary: Продолжение диалога с агентом
+      description: Отправка userPrompt (реакции пользователя) на запрос агента для продолжения диалога
+      operationId: continueDialog
+      parameters:
+        - name: sessionId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: Идентификатор сессии диалога
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UserResponseRequest'
+      responses:
+        '200':
+          description: Ответ AI-агента с учетом ответа пользователя
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DialogResponse'
+        '400':
+          description: Невалидный запрос
+        '404':
+          description: Сессия не найдена
+        '500':
+          description: Внутренняя ошибка сервера
+
+components:
+  schemas:
+    DialogInitRequest:
+      type: object
+      required:
+        - sessionId
+        - contextPrompt
+      properties:
+        sessionId:
+          type: string
+          format: uuid
+          description: Идентификатор сессии диалога (генерируется АС КОДА)
+        contextPrompt:
+          type: object
+          required:
+            - date
+          properties:
+            simulationId:
+              type: string
+              format: uuid
+              description: Идентификатор симуляции (ID ФП Симуляции)
+            product:
+              type: string
+              enum:
+                - "Кредитные карты"
+                - "Потребительское кредитование"
+                - "Автокредиты"
+              description: Продукт
+            date:
+              type: string
+              format: date
+              description: Дата создания = дата запуска диалогового окна в UI
+            name:
+              type: string
+              description: Наименование запрошенных изменений
+              default: "Изменение Риск-параметров"
+            user:
+              type: string
+              description: Ответственный аналитик (ФИО из СУДИРа)
+            businessEffect:
+              type: string
+              description: Бизнес-эффект. Если в АС КОДА нет поля или null, агент запросит у пользователя
+            bt:
+              type: string
+              format: uri
+              description: Ссылка на существующий БТ (URL). null означает, что БТ нет
+            riskParam:
+              type: array
+              description: Список изменяемых риск-параметров
+              items:
+                type: object
+                required:
+                  - name
+                  - asIs
+                  - toBe
+                properties:
+                  name:
+                    type: string
+                    description: Название риск-параметра (из вкладки «Изменение Риск-параметров» поле «Риск-параметр»)
+                  asIs:
+                    type:
+                      - number
+                      - string
+                      - boolean
+                    description: Текущее значение (может быть числом, строкой или датой в ISO формате)
+                  toBe:
+                    type:
+                      - number
+                      - string
+                      - boolean
+                    description: Новое значение (может быть числом, строкой или датой в ISO формате)
+      additionalProperties: false
+
+    DialogResponse:
+      type: object
+      required:
+        - agentResponse
+      properties:
+        agentResponse:
+          type: string
+          description: Ответ от AI-агента (текстовое сообщение или запрос информации)
+        btUrl:
+          type: string
+          nullable: true
+          format: uri
+          description: Ссылка на сгенерированный или обновленный БТ (опционально)
+      additionalProperties: false
+
+    UserResponseRequest:
+      type: object
+      required:
+        - userPrompt
+      properties:
+        userPrompt:
+          type: string
+          description: Ответ пользователя на запрос AI-агента
+      additionalProperties: false
