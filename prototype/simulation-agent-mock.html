@@ -3,778 +3,520 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Макет вкладки симуляции + AI-агент</title>
+  <title>Simulation + AI Agent (MUI)</title>
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+  <script crossorigin src="https://unpkg.com/@mui/material@5.15.20/umd/material-ui.development.js"></script>
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <style>
-    :root {
-      --bg: #f5f6f8;
-      --panel: #e9edf3;
-      --input: #f9fafb;
-      --line: #d7dce4;
-      --text: #2f3747;
-      --muted: #69748b;
-      --brand: #214f8f;
-      --brand-soft: #e6eef9;
-      --side: #111721;
-      --side-hover: #1a2330;
-      --success: #3a9146;
-      --danger: #c74a4a;
-      --shadow: 0 2px 10px rgba(21, 32, 58, 0.14);
-    }
-
-    * { box-sizing: border-box; }
-    body {
-      margin: 0;
-      color: var(--text);
-      font-family: "Segoe UI", "Liberation Sans", sans-serif;
-      background: var(--bg);
-    }
-
-    .layout {
-      display: grid;
-      grid-template-columns: 142px 1fr;
-      min-height: 100vh;
-    }
-
-    .sidebar {
-      background: linear-gradient(180deg, #121923 0%, #0f151f 100%);
-      color: #c8d2df;
-      padding: 12px 6px;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-    }
-
-    .side-item {
-      font-size: 13px;
-      border-radius: 3px;
-      padding: 8px 8px;
-      background: transparent;
-      cursor: pointer;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .side-item:hover { background: var(--side-hover); }
-    .side-item.active { background: #1b2431; color: #77e2c0; }
-    .side-footer { margin-top: auto; font-size: 12px; opacity: 0.8; }
-
-    .main {
-      display: flex;
-      flex-direction: column;
-      min-width: 980px;
-    }
-
-    .topbar {
-      height: 56px;
-      border-bottom: 1px solid #e1e5ec;
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 14px;
-      padding: 0 18px;
-      font-size: 12px;
-      color: #4f596d;
-      background: #f7f8fa;
-    }
-    .top-pill {
-      border: 1px solid #d6dce5;
-      border-radius: 2px;
-      padding: 6px 10px;
-      background: #fbfcfe;
-      min-width: 92px;
-      text-align: center;
-    }
-
-    .content {
-      padding: 14px 18px 24px;
-    }
-
-    .tabs {
-      display: flex;
-      gap: 8px;
-      margin-bottom: 14px;
-    }
-    .tab {
-      border: 1px solid #d6dce5;
-      border-radius: 4px;
-      background: #f0f2f5;
-      color: #6a7488;
-      font-size: 13px;
-      padding: 8px 12px;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
-    }
-    .tab.active {
-      color: var(--brand);
-      background: #fff;
-      box-shadow: var(--shadow);
-    }
-
-    .screen {
-      display: none;
-    }
-    .screen.active { display: block; }
-
-    .headline {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      font-size: 34px;
-      font-weight: 700;
-      margin: 10px 0 16px;
-    }
-    .headline .id {
-      font-size: 32px;
-      font-weight: 600;
-      letter-spacing: 0.4px;
-    }
-    .badge {
-      font-size: 12px;
-      background: #def2de;
-      color: #2c7740;
-      border-radius: 3px;
-      padding: 4px 9px;
-      font-weight: 600;
-    }
-
-    .agent-actions {
-      margin-left: auto;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-    .btn {
-      border: 1px solid transparent;
-      border-radius: 4px;
-      cursor: pointer;
-      font-size: 13px;
-      font-weight: 600;
-      padding: 8px 12px;
-    }
-    .btn.primary {
-      background: var(--brand);
-      color: #fff;
-      box-shadow: 0 2px 6px rgba(33, 79, 143, 0.35);
-    }
-    .btn.secondary {
-      border-color: #cfd6e1;
-      background: #fff;
-      color: #4f5b73;
-    }
-    .btn.warn {
-      background: #fff3f3;
-      color: var(--danger);
-      border-color: #f0c9c9;
-    }
-    .btn:disabled {
-      opacity: 0.45;
-      cursor: not-allowed;
-    }
-
-    .stagebar {
-      display: grid;
-      grid-template-columns: repeat(7, 1fr);
-      gap: 12px;
-      margin: 2px 0 16px;
-      padding-top: 4px;
-    }
-    .stage {
-      font-size: 11px;
-      color: #3f4658;
-      line-height: 1.35;
-      position: relative;
-      padding-top: 24px;
-    }
-    .stage::before {
-      content: "✓";
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 16px;
-      height: 16px;
-      border-radius: 50%;
-      background: var(--success);
-      color: #fff;
-      font-size: 11px;
-      display: grid;
-      place-items: center;
-      font-weight: 700;
-    }
-    .stage .title {
-      font-weight: 700;
-      display: block;
-      margin-bottom: 2px;
-    }
-    .divider {
-      border-top: 1px solid #e0e5ec;
-      margin: 8px 0 14px;
-    }
-
-    .card {
-      background: var(--panel);
-      border: 1px solid #e1e6ee;
-      border-radius: 12px;
-      padding: 14px;
-      margin-bottom: 14px;
-      box-shadow: 0 1px 3px rgba(25, 35, 56, 0.05);
-    }
-    .card-title {
-      font-weight: 700;
-      color: var(--brand);
-      margin-bottom: 10px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .grid-2 {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px 18px;
-    }
-    .field {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-      font-size: 11px;
-      color: var(--muted);
-    }
-    .value {
-      min-height: 26px;
-      border: 1px solid #cfd6e1;
-      border-radius: 3px;
-      background: var(--input);
-      color: #5a6377;
-      padding: 4px 8px;
-      display: flex;
-      align-items: center;
-      font-size: 13px;
-    }
-    .value.link-value a {
-      color: #1c5cb5;
-      text-decoration: none;
-      border-bottom: 1px dashed #1c5cb5;
-    }
-    .value.link-value a:hover { border-bottom-style: solid; }
-
-    .risk-row {
-      border: 1px solid #d6dde8;
-      border-radius: 3px;
-      background: #f8fafc;
-      padding: 10px;
-      display: grid;
-      grid-template-columns: 2fr 1fr 80px;
-      gap: 10px;
-      align-items: start;
-    }
-    .risk-sub {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 10px;
-      grid-column: 1 / span 2;
-    }
-
-    .collapsed {
-      height: 46px;
-      display: flex;
-      align-items: center;
-      padding: 0 14px;
-      font-weight: 700;
-      color: var(--brand);
-    }
-
-    .results-title {
-      font-size: 35px;
-      font-weight: 700;
-      margin: 12px 0 14px;
-    }
-
-    .modal-backdrop {
-      position: fixed;
-      inset: 0;
-      background: rgba(15, 22, 34, 0.47);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      z-index: 20;
-      padding: 24px;
-    }
-    .modal-backdrop.open { display: flex; }
-    .modal {
-      width: 860px;
-      max-width: 95vw;
-      background: #fff;
-      border-radius: 12px;
-      box-shadow: 0 16px 40px rgba(19, 28, 44, 0.4);
-      overflow: hidden;
-    }
-    .modal-head {
-      background: #f1f4f9;
-      border-bottom: 1px solid #dde4ef;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 14px;
-      font-weight: 700;
-      color: #334160;
-    }
-    .modal-head .meta {
-      font-size: 12px;
-      color: #6e7a91;
-      font-weight: 500;
-    }
-
-    .chat {
-      height: 360px;
-      overflow: auto;
-      padding: 14px;
-      background: #fafbfc;
-      display: flex;
-      flex-direction: column;
-      gap: 9px;
-    }
-    .msg {
-      max-width: 80%;
-      padding: 9px 10px;
-      border-radius: 10px;
-      line-height: 1.35;
-      font-size: 13px;
-      white-space: pre-wrap;
-    }
-    .msg.agent {
-      background: #eaf2ff;
-      border: 1px solid #d1e2ff;
-      align-self: flex-start;
-    }
-    .msg.user {
-      background: #eff8ee;
-      border: 1px solid #d7ecd6;
-      align-self: flex-end;
-    }
-    .msg.error {
-      background: #fff0f0;
-      border: 1px solid #f3c9c9;
-      color: #953737;
-      align-self: center;
-      max-width: 92%;
-    }
-
-    .modal-foot {
-      border-top: 1px solid #e1e6ef;
-      padding: 12px 14px;
-      background: #fff;
-      display: grid;
-      grid-template-columns: 1fr auto auto auto;
-      gap: 8px;
-      align-items: center;
-    }
-    .input {
-      border: 1px solid #cfd6e1;
-      border-radius: 5px;
-      min-height: 36px;
-      padding: 8px 10px;
-      outline: none;
-      font-size: 13px;
-      width: 100%;
-    }
-    .state-text {
-      font-size: 12px;
-      color: #6a7388;
-      margin-right: 8px;
-    }
-
-    .tiny {
-      font-size: 11px;
-      color: #7a859d;
-      margin-top: 4px;
-    }
+    body { margin: 0; background: #f5f6f8; }
   </style>
 </head>
 <body>
-  <div class="layout">
-    <aside class="sidebar">
-      <div class="side-item">◷ Пилоты</div>
-      <div class="side-item">⌁ Пересечения</div>
-      <div class="side-item">◌ История изменений</div>
-      <div class="side-item active">⌂ Симуляции</div>
-      <div class="side-item">⌗ Метрики</div>
-      <div class="side-footer">
-        <div class="side-item">◫ База знаний</div>
-        <div class="side-item">? Поддержка</div>
-      </div>
-    </aside>
+  <div id="root"></div>
+  <script type="text/babel">
+    const {
+      Box, Button, Chip, CssBaseline, Dialog, DialogContent, Divider, Grid,
+      List, ListItemButton, ListItemText, Paper, Stack, Tab, Tabs, TextField,
+      ThemeProvider, Typography, createTheme, CircularProgress
+    } = MaterialUI;
+    const { useMemo, useState, useEffect, useRef } = React;
 
-    <main class="main">
-      <header class="topbar">
-        <div class="top-pill">ДРРБ</div>
-        <div>👤 Реутов Иван Николаевич</div>
-      </header>
-
-      <div class="content">
-        <div class="tabs">
-          <button id="tabMain" class="tab active">☰ Основная информация</button>
-          <button id="tabResults" class="tab">☑ Итоги симуляции</button>
-        </div>
-
-        <section id="screenMain" class="screen active">
-          <div class="headline">
-            <span class="id">SIM-CC-11</span>
-            <span class="badge">Завершена</span>
-            <div class="agent-actions">
-              <button id="btnOpenAgent" class="btn primary">Сформировать БТ</button>
-            </div>
-          </div>
-
-          <div class="stagebar">
-            <div class="stage"><span class="title">Подготовка данных</span>с: 12:05 15.04.2026<br>по: 12:21 15.04.2026</div>
-            <div class="stage"><span class="title">Прогон стратегии на исходных параметрах</span>с: 12:21 15.04.2026<br>по: 13:14 15.04.2026</div>
-            <div class="stage"><span class="title">Прогон стратегии на измененных параметрах</span>с: 13:14 15.04.2026<br>по: 14:00 15.04.2026</div>
-            <div class="stage"><span class="title">Постобработка данных стратегии</span>с: 14:00 15.04.2026<br>по: 14:05 15.04.2026</div>
-            <div class="stage"><span class="title">Агрегация данных для кредитных карт</span>с: 14:05 15.04.2026<br>по: 14:08 15.04.2026</div>
-            <div class="stage"><span class="title">Скачивание агрегатов кредитных карт</span>с: 14:08 15.04.2026<br>по: 14:10 15.04.2026</div>
-            <div class="stage"><span class="title">Формирование отчета</span>с: 14:10 15.04.2026<br>по: 14:11 15.04.2026</div>
-          </div>
-
-          <div class="divider"></div>
-
-          <div class="card">
-            <div class="card-title">⌃ Основная информация</div>
-            <div class="grid-2">
-              <div class="field"><span>Пространство симуляции*</span><div class="value">Кредитные карты</div></div>
-              <div class="field"><span>Название симуляции*</span><div class="value">Переход на использование Единого дохода, рассчитанного на Клиентской стратегии.</div></div>
-              <div class="field"><span>Режим симуляции*</span><div class="value">Изменение риск-параметров</div></div>
-              <div class="field"><span>Описание симуляции</span><div class="value">Переход на использование Единого дохода, рассчитанного на Клиентской стратегии.</div></div>
-              <div class="field"><span>Версия сборки стратегии*</span><div class="value">actual</div></div>
-            </div>
-          </div>
-
-          <div class="card collapsed">⌄ Фильтрация выборки</div>
-          <div class="card">
-            <div class="card-title">⌃ Изменение риск-параметров</div>
-            <div class="risk-row">
-              <div class="field"><span>Риск-параметр*</span><div class="value">flg_uni_incf_km_switch</div></div>
-              <div class="field"><span>Дата активации</span><div class="value">20.04.2026</div></div>
-              <button class="btn secondary" disabled>Удалить</button>
-              <div class="risk-sub">
-                <div class="field"><span>Текущее значение(низ)</span><div class="value">0</div></div>
-                <div class="field"><span>Новое значение(низ)</span><div class="value">1</div></div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        <section id="screenResults" class="screen">
-          <div class="results-title">Итоги симуляции SIM-CC-11</div>
-          <div class="card" style="min-height: 380px;">
-            <div class="grid-2">
-              <div class="field">
-                <span>Ссылка на БТ*</span>
-                <div id="btLinkField" class="value">—</div>
-              </div>
-              <div class="field"><span>Дата и время начала релиза</span><div class="value">15.04.2026 14:10</div></div>
-              <div class="field" style="grid-column: 1 / span 2;"><span>Описание релиза*</span><div class="value">Переход на использование Единого дохода, рассчитанного на Клиентской стратегии.</div></div>
-              <div class="field" style="grid-column: 1 / span 2;"><span>Эффекты релиза*</span><div class="value">Увеличение целевой выборки и оптимизация риск-аппетита.</div></div>
-              <div class="field" style="grid-column: 1 / span 2;"><span>Описание итогов</span><div class="value">Симуляция завершена успешно.</div></div>
-            </div>
-          </div>
-        </section>
-      </div>
-    </main>
-  </div>
-
-  <div id="agentModal" class="modal-backdrop">
-    <div class="modal">
-      <div class="modal-head">
-        <div>Диалог с AI-агентом RAIN</div>
-        <div id="sessionLabel" class="meta">sessionId: not-started</div>
-      </div>
-      <div id="chat" class="chat"></div>
-      <div class="modal-foot">
-        <input id="userInput" class="input" placeholder="Введите сообщение..." />
-        <span id="stateText" class="state-text">Готово</span>
-        <button id="btnRestart" class="btn secondary">Перезапустить сессию</button>
-        <button id="btnSend" class="btn primary">Отправить</button>
-        <button id="btnClose" class="btn warn">Закрыть</button>
-      </div>
-      <div class="tiny" style="padding: 0 14px 12px;">
-        Реализовано в макете: init/continue, проверка существующего БТ, явное подтверждение, retry (до 3), timeout-сценарий, сохранение `btUrl`.
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const tabMain = document.getElementById("tabMain");
-    const tabResults = document.getElementById("tabResults");
-    const screenMain = document.getElementById("screenMain");
-    const screenResults = document.getElementById("screenResults");
-    const btnOpenAgent = document.getElementById("btnOpenAgent");
-    const modal = document.getElementById("agentModal");
-    const chat = document.getElementById("chat");
-    const btnSend = document.getElementById("btnSend");
-    const btnClose = document.getElementById("btnClose");
-    const btnRestart = document.getElementById("btnRestart");
-    const userInput = document.getElementById("userInput");
-    const btLinkField = document.getElementById("btLinkField");
-    const sessionLabel = document.getElementById("sessionLabel");
-    const stateText = document.getElementById("stateText");
-
-    const simulation = {
-      id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
-      number: "SIM-CC-11",
-      status: "completed",
-      user: "Реутов Иван Николаевич",
-      product: "Кредитные карты",
-      btExists: false,
-      btUrl: ""
-    };
-
-    let sessionId = "";
-    let retryCounter = 0;
-    let waitingConfirm = false;
-    let waitingMissingData = false;
-    let isAwaitingResponse = false;
-    let isHardBlocked = false;
-    let collected = {
-      businessGoal: "",
-      customer: "",
-      businessEffect: "Увеличение целевой выборки и оптимизация риск-аппетита."
-    };
-
-    function setTab(isMain) {
-      tabMain.classList.toggle("active", isMain);
-      tabResults.classList.toggle("active", !isMain);
-      screenMain.classList.toggle("active", isMain);
-      screenResults.classList.toggle("active", !isMain);
-    }
-
-    tabMain.addEventListener("click", () => setTab(true));
-    tabResults.addEventListener("click", () => setTab(false));
-
-    function uuidLike() {
-      const s4 = () => Math.random().toString(16).slice(2, 6);
-      return `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`;
-    }
-
-    function addMsg(text, type = "agent") {
-      const div = document.createElement("div");
-      div.className = `msg ${type}`;
-      div.textContent = text;
-      chat.appendChild(div);
-      chat.scrollTop = chat.scrollHeight;
-    }
-
-    function setState(text) {
-      stateText.textContent = text;
-    }
-
-    function setComposerState() {
-      const disabled = isAwaitingResponse || isHardBlocked;
-      userInput.disabled = disabled;
-      btnSend.disabled = disabled;
-      btnRestart.disabled = isAwaitingResponse;
-      userInput.placeholder = isHardBlocked
-        ? "Сессия заблокирована. Доступен только перезапуск."
-        : isAwaitingResponse
-          ? "Ожидаем ответ агента..."
-          : "Введите сообщение...";
-    }
-
-    function beginAwait(statusText = "Ожидаем ответ агента...") {
-      isAwaitingResponse = true;
-      setState(statusText);
-      setComposerState();
-    }
-
-    function endAwait(statusText = "Готово") {
-      isAwaitingResponse = false;
-      setState(statusText);
-      setComposerState();
-    }
-
-    function hardBlock(statusText = "Требуется перезапуск") {
-      isHardBlocked = true;
-      endAwait(statusText);
-    }
-
-    function clearHardBlock() {
-      isHardBlocked = false;
-      setComposerState();
-    }
-
-    function makeContextPrompt() {
-      return {
-        simulationId: simulation.id,
-        product: simulation.product,
-        date: new Date().toLocaleDateString("ru-RU"),
-        name: "Изменение Риск-параметров",
-        user: simulation.user,
-        businessEffect: collected.businessEffect,
-        bt: simulation.btExists,
-        riskParam: [{ name: "flg_uni_incf_km_switch", asIs: 0, toBe: 1 }]
-      };
-    }
-
-    function openModal() {
-      modal.classList.add("open");
-      chat.innerHTML = "";
-      startInitSession();
-    }
-
-    function closeModal() {
-      modal.classList.remove("open");
-    }
-
-    btnOpenAgent.addEventListener("click", openModal);
-    btnClose.addEventListener("click", closeModal);
-
-    function startInitSession(isRestart = false) {
-      sessionId = uuidLike();
-      sessionLabel.textContent = `sessionId: ${sessionId}`;
-      waitingConfirm = false;
-      waitingMissingData = false;
-      retryCounter = 0;
-      clearHardBlock();
-      beginAwait("Инициализация...");
-
-      if (!isRestart) {
-        addMsg("Инициализируем диалог и отправляем POST /dialog/init ...", "agent");
-      } else {
-        addMsg("Сессия перезапущена. Отправляем новый POST /dialog/init ...", "agent");
+    const theme = createTheme({
+      palette: {
+        mode: "light",
+        background: { default: "#f5f6f8" },
+        primary: { main: "#214f8f" },
+        success: { main: "#3a9146" },
+        text: { primary: "#2f3747", secondary: "#69748b" }
+      },
+      typography: {
+        fontFamily: '"Segoe UI", "Liberation Sans", sans-serif',
+        fontSize: 12
+      },
+      components: {
+        MuiButton: {
+          styleOverrides: {
+            root: { textTransform: "none", borderRadius: 4, fontWeight: 600, fontSize: 13 }
+          }
+        },
+        MuiPaper: { styleOverrides: { root: { borderRadius: 12 } } },
+        MuiTab: { styleOverrides: { root: { minHeight: 32, padding: "6px 12px", fontWeight: 600 } } },
+        MuiTextField: { defaultProps: { size: "small" } }
       }
+    });
 
-      const payload = makeContextPrompt();
-      window.__lastInitPayload = payload;
+    const stages = [
+      ["Подготовка данных", "с: 12:05 15.04.2026", "по: 12:21 15.04.2026"],
+      ["Прогон стратегии на исходных параметрах", "с: 12:21 15.04.2026", "по: 13:14 15.04.2026"],
+      ["Прогон стратегии на измененных параметрах", "с: 13:14 15.04.2026", "по: 14:00 15.04.2026"],
+      ["Постобработка данных стратегии", "с: 14:00 15.04.2026", "по: 14:05 15.04.2026"],
+      ["Агрегация данных для кредитных карт", "с: 14:05 15.04.2026", "по: 14:08 15.04.2026"],
+      ["Скачивание агрегатов кредитных карт", "с: 14:08 15.04.2026", "по: 14:10 15.04.2026"],
+      ["Формирование отчета", "с: 14:10 15.04.2026", "по: 14:11 15.04.2026"]
+    ];
 
-      setTimeout(() => {
-        endAwait("Готово");
-        addMsg(
-          payload.bt
-            ? "Уже найдено ранее созданное БТ. Нужно создать новый документ? (Да/Нет)"
-            : "Нужно создать БТ по завершенной симуляции SIM-CC-11? (Да/Нет)",
-          "agent"
-        );
-        userInput.focus();
-      }, 650);
+    const sidebarItems = ["Пилоты", "Пересечения", "История изменений", "Симуляции", "Метрики"];
+    const lowerItems = ["База знаний", "Поддержка"];
+
+    function uid() {
+      const p = () => Math.random().toString(16).slice(2, 6);
+      return `${p()}${p()}-${p()}-${p()}-${p()}-${p()}${p()}${p()}`;
     }
 
-    btnRestart.addEventListener("click", () => startInitSession(true));
-
-    function simulateRetryableFailure() {
-      retryCounter += 1;
-      addMsg(`Ошибка HTTP 503. Попытка ${retryCounter} из 3.`, "error");
-      if (retryCounter < 3) {
-        setTimeout(() => {
-          beginAwait("Повторный вызов...");
-          addMsg("Повторный вызов /dialog/continue выполнен успешно.", "agent");
-          endAwait("Готово");
-          userInput.focus();
-        }, 700);
-      } else {
-        addMsg("Все 3 попытки неуспешны. Нажмите «Перезапустить сессию».", "error");
-        hardBlock("Требуется перезапуск");
-      }
-    }
-
-    function finalPreview() {
-      waitingConfirm = true;
-      addMsg(
-        "Сформирован черновик БТ:\n" +
-        "- Дата: " + new Date().toLocaleDateString("ru-RU") + "\n" +
-        "- Наименование: Изменение Риск-параметров\n" +
-        "- Бизнес-цель: " + collected.businessGoal + "\n" +
-        "- Заказчик: " + collected.customer + "\n" +
-        "- Бизнес-эффект: " + collected.businessEffect + "\n" +
-        "- Аналитик: " + simulation.user + "\n" +
-        "- Риск-параметры: flg_uni_incf_km_switch: AS IS=0, TO BE=1\n" +
-        "Подтвердить создание страницы в Confluence? (Да/Нет)"
+    function ReadOnlyField({ label, value }) {
+      return (
+        <Box>
+          <Typography sx={{ fontSize: 11, color: "#68748b", mb: 0.3 }}>{label}</Typography>
+          <Paper
+            variant="outlined"
+            sx={{
+              minHeight: 30,
+              px: 1,
+              py: 0.6,
+              borderRadius: "3px",
+              bgcolor: "#f9fafb",
+              borderColor: "#cfd6e1",
+              display: "flex",
+              alignItems: "center",
+              fontSize: 13,
+              color: "#566178"
+            }}
+          >
+            {value}
+          </Paper>
+        </Box>
       );
-      userInput.focus();
     }
 
-    function processAgentTurn(text) {
-      const normalized = text.trim().toLowerCase();
-
-      if (normalized === "retry") {
-        simulateRetryableFailure();
-        return;
-      }
-      if (normalized === "timeout") {
-        addMsg("Превышено время ожидания ответа агента. Доступен «Перезапустить сессию».", "error");
-        hardBlock("Таймаут");
-        return;
-      }
-
-      if (!collected.businessGoal || !collected.customer) {
-        if (normalized === "да") {
-          waitingMissingData = true;
-          addMsg("Уточните, пожалуйста: 1) Бизнес-цель 2) Кто заказчик?", "agent");
-          endAwait("Готово");
-          userInput.focus();
-          return;
-        }
-        if (normalized === "нет") {
-          addMsg("Диалог завершен без создания БТ.", "agent");
-          endAwait("Завершено без публикации");
-          return;
-        }
-        if (waitingMissingData && text.includes(";")) {
-          const parts = text.split(";");
-          collected.businessGoal = (parts[0] || "").trim() || "Повышение качества принятия решений";
-          collected.customer = (parts[1] || "").trim() || "ДРРБ";
-          addMsg("Данные получены. Подготавливаю итоговую структуру БТ...", "agent");
-          setTimeout(() => {
-            finalPreview();
-            endAwait("Готово");
-          }, 600);
-          return;
-        }
-      }
-
-      if (waitingConfirm) {
-        if (normalized === "да") {
-          addMsg("Создаю страницу в Confluence по шаблону «ПРМ КК»...", "agent");
-          setTimeout(() => {
-            simulation.btExists = true;
-            simulation.btUrl = "https://confluence.delta.sbrf.ru/pages/viewpage.action?pageId=19999123456";
-            btLinkField.classList.add("link-value");
-            btLinkField.innerHTML = `<a href="${simulation.btUrl}" target="_blank">${simulation.btUrl}</a>`;
-            addMsg("Готово. btUrl получен и сохранен в поле «Ссылка на БТ».", "agent");
-            endAwait("БТ создано");
-            waitingConfirm = false;
-            userInput.focus();
-          }, 850);
-          return;
-        }
-        if (normalized === "нет") {
-          addMsg("Публикация отменена. Страница не создана.", "agent");
-          endAwait("Ожидаю корректировки");
-          waitingConfirm = false;
-          userInput.focus();
-          return;
-        }
-      }
-
-      addMsg("Не распознал ответ. Используйте: Да/Нет, либо введите `цель; заказчик`.", "error");
-      endAwait("Готово");
-      userInput.focus();
+    function StageBar() {
+      return (
+        <Grid container spacing={1.2} sx={{ mt: 0.2, mb: 1.8 }}>
+          {stages.map((s) => (
+            <Grid item xs key={s[0]}>
+              <Box sx={{ position: "relative", pt: 3 }}>
+                <Box
+                  sx={{
+                    position: "absolute",
+                    top: 0,
+                    left: 0,
+                    width: 16,
+                    height: 16,
+                    borderRadius: "50%",
+                    bgcolor: "#3a9146",
+                    color: "#fff",
+                    fontWeight: 700,
+                    fontSize: 11,
+                    display: "grid",
+                    placeItems: "center"
+                  }}
+                >
+                  ✓
+                </Box>
+                <Typography sx={{ fontSize: 11, fontWeight: 700, color: "#394258", lineHeight: 1.2 }}>{s[0]}</Typography>
+                <Typography sx={{ fontSize: 11, color: "#555f74", lineHeight: 1.2 }}>{s[1]}</Typography>
+                <Typography sx={{ fontSize: 11, color: "#555f74", lineHeight: 1.2 }}>{s[2]}</Typography>
+              </Box>
+            </Grid>
+          ))}
+        </Grid>
+      );
     }
 
-    btnSend.addEventListener("click", () => {
-      if (isAwaitingResponse || isHardBlocked) return;
-      const text = userInput.value.trim();
-      if (!text) return;
-      userInput.value = "";
-      addMsg(text, "user");
-      beginAwait("Ожидаем ответ агента...");
-      setTimeout(() => processAgentTurn(text), 700);
-    });
+    function AgentDialog({ open, onClose, onSaveBtLink }) {
+      const [sessionId, setSessionId] = useState("not-started");
+      const [messages, setMessages] = useState([]);
+      const [text, setText] = useState("");
+      const [stateText, setStateText] = useState("Готово");
+      const [awaiting, setAwaiting] = useState(false);
+      const [hardBlocked, setHardBlocked] = useState(false);
+      const [waitingMissingData, setWaitingMissingData] = useState(false);
+      const [waitingConfirm, setWaitingConfirm] = useState(false);
+      const [retryCounter, setRetryCounter] = useState(0);
+      const [btExists, setBtExists] = useState(false);
+      const [collected, setCollected] = useState({
+        businessGoal: "",
+        customer: "",
+        businessEffect: "Увеличение целевой выборки и оптимизация риск-аппетита."
+      });
+      const chatRef = useRef(null);
 
-    userInput.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") btnSend.click();
-    });
+      useEffect(() => {
+        if (chatRef.current) chatRef.current.scrollTop = chatRef.current.scrollHeight;
+      }, [messages]);
 
-    setComposerState();
+      const composerDisabled = awaiting || hardBlocked;
+
+      const addMsg = (role, text) => setMessages((p) => [...p, { role, text }]);
+
+      const startSession = (isRestart = false) => {
+        const newSession = uid();
+        setSessionId(newSession);
+        setMessages([]);
+        setHardBlocked(false);
+        setAwaiting(true);
+        setStateText("Инициализация...");
+        setRetryCounter(0);
+        setWaitingMissingData(false);
+        setWaitingConfirm(false);
+        setCollected({
+          businessGoal: "",
+          customer: "",
+          businessEffect: "Увеличение целевой выборки и оптимизация риск-аппетита."
+        });
+        addMsg("agent", isRestart
+          ? "Сессия перезапущена. Отправляем новый POST /dialog/init ..."
+          : "Инициализируем диалог и отправляем POST /dialog/init ...");
+
+        setTimeout(() => {
+          setAwaiting(false);
+          setStateText("Готово");
+          addMsg("agent", btExists
+            ? "Уже найдено ранее созданное БТ. Нужно создать новый документ? (Да/Нет)"
+            : "Нужно создать БТ по завершенной симуляции SIM-CC-11? (Да/Нет)");
+        }, 700);
+      };
+
+      useEffect(() => {
+        if (open) startSession(false);
+      }, [open]);
+
+      const send = () => {
+        if (composerDisabled) return;
+        const value = text.trim();
+        if (!value) return;
+        setText("");
+        addMsg("user", value);
+        setAwaiting(true);
+        setStateText("Ожидаем ответ агента...");
+        setTimeout(() => processTurn(value), 650);
+      };
+
+      const processTurn = (raw) => {
+        const normalized = raw.trim().toLowerCase();
+        if (normalized === "timeout") {
+          addMsg("error", "Превышено время ожидания ответа агента. Доступен «Перезапустить сессию».")
+          setAwaiting(false);
+          setHardBlocked(true);
+          setStateText("Таймаут");
+          return;
+        }
+        if (normalized === "retry") {
+          const nextRetry = retryCounter + 1;
+          setRetryCounter(nextRetry);
+          addMsg("error", `Ошибка HTTP 503. Попытка ${nextRetry} из 3.`);
+          if (nextRetry >= 3) {
+            addMsg("error", "Все 3 попытки неуспешны. Нажмите «Перезапустить сессию».");
+            setAwaiting(false);
+            setHardBlocked(true);
+            setStateText("Требуется перезапуск");
+            return;
+          }
+          setTimeout(() => {
+            addMsg("agent", "Повторный вызов /dialog/continue выполнен успешно.");
+            setAwaiting(false);
+            setStateText("Готово");
+          }, 650);
+          return;
+        }
+
+        if (!collected.businessGoal || !collected.customer) {
+          if (normalized === "нет") {
+            addMsg("agent", "Диалог завершен без создания БТ.");
+            setAwaiting(false);
+            setStateText("Завершено без публикации");
+            return;
+          }
+          if (normalized === "да") {
+            setWaitingMissingData(true);
+            addMsg("agent", "Уточните, пожалуйста: 1) Бизнес-цель 2) Кто заказчик? (введите через `;`)");
+            setAwaiting(false);
+            setStateText("Готово");
+            return;
+          }
+          if (waitingMissingData && raw.includes(";")) {
+            const parts = raw.split(";");
+            const next = {
+              ...collected,
+              businessGoal: (parts[0] || "").trim() || "Повышение качества принятия решений",
+              customer: (parts[1] || "").trim() || "ДРРБ"
+            };
+            setCollected(next);
+            setWaitingConfirm(true);
+            addMsg("agent", "Сформирован черновик БТ:\n" +
+              `- Дата: ${new Date().toLocaleDateString("ru-RU")}\n` +
+              "- Наименование: Изменение Риск-параметров\n" +
+              `- Бизнес-цель: ${next.businessGoal}\n` +
+              `- Заказчик: ${next.customer}\n` +
+              `- Бизнес-эффект: ${next.businessEffect}\n` +
+              "- Аналитик: Реутов Иван Николаевич\n" +
+              "- Риск-параметры: flg_uni_incf_km_switch: AS IS=0, TO BE=1\n" +
+              "Подтвердить создание страницы в Confluence? (Да/Нет)");
+            setAwaiting(false);
+            setStateText("Готово");
+            return;
+          }
+        }
+
+        if (waitingConfirm) {
+          if (normalized === "да") {
+            addMsg("agent", "Создаю страницу в Confluence по шаблону «ПРМ КК»...");
+            setTimeout(() => {
+              const url = "https://confluence.delta.sbrf.ru/pages/viewpage.action?pageId=19999123456";
+              addMsg("agent", "Готово. btUrl получен и сохранен в поле «Ссылка на БТ».");
+              setBtExists(true);
+              onSaveBtLink(url);
+              setAwaiting(false);
+              setWaitingConfirm(false);
+              setStateText("БТ создано");
+            }, 900);
+            return;
+          }
+          if (normalized === "нет") {
+            addMsg("agent", "Публикация отменена. Страница не создана.");
+            setAwaiting(false);
+            setWaitingConfirm(false);
+            setStateText("Ожидаю корректировки");
+            return;
+          }
+        }
+
+        addMsg("error", "Не распознал ответ. Используйте: Да/Нет, `цель; заказчик`, `retry` или `timeout`.");
+        setAwaiting(false);
+        setStateText("Готово");
+      };
+
+      return (
+        <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth
+          PaperProps={{ sx: { borderRadius: 2, overflow: "hidden" } }}>
+          <Box sx={{ bgcolor: "#f1f4f9", borderBottom: "1px solid #dde4ef", px: 2, py: 1.2 }}>
+            <Stack direction="row" justifyContent="space-between" alignItems="center">
+              <Typography sx={{ fontSize: 15, fontWeight: 700, color: "#334160" }}>
+                Диалог с AI-агентом RAIN
+              </Typography>
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Typography sx={{ fontSize: 12, color: "#6e7a91" }}>sessionId: {sessionId}</Typography>
+                <Chip
+                  label="Перезапустить сессию"
+                  size="small"
+                  variant="outlined"
+                  onClick={() => startSession(true)}
+                  disabled={awaiting}
+                  sx={{
+                    height: 22,
+                    borderColor: "#bfd1eb",
+                    color: "#214f8f",
+                    bgcolor: "#f6f9ff",
+                    fontSize: 11,
+                    "& .MuiChip-label": { px: 1, fontWeight: 600 }
+                  }}
+                />
+              </Stack>
+            </Stack>
+          </Box>
+          <DialogContent sx={{ p: 0, bgcolor: "#fafbfc" }}>
+            <Box
+              ref={chatRef}
+              sx={{ height: 370, overflow: "auto", p: 1.5, display: "flex", flexDirection: "column", gap: 1 }}
+            >
+              {messages.map((m, i) => (
+                <Paper key={i} variant="outlined"
+                  sx={{
+                    px: 1.2, py: 1,
+                    borderRadius: 2,
+                    maxWidth: "84%",
+                    alignSelf: m.role === "user" ? "flex-end" : m.role === "error" ? "center" : "flex-start",
+                    bgcolor: m.role === "user" ? "#eff8ee" : m.role === "error" ? "#fff0f0" : "#eaf2ff",
+                    borderColor: m.role === "user" ? "#d7ecd6" : m.role === "error" ? "#f3c9c9" : "#d1e2ff",
+                    whiteSpace: "pre-wrap",
+                    color: m.role === "error" ? "#953737" : "#2f3747"
+                  }}
+                >
+                  <Typography sx={{ fontSize: 13, lineHeight: 1.35 }}>{m.text}</Typography>
+                </Paper>
+              ))}
+            </Box>
+            <Divider />
+            <Stack direction="row" spacing={1} alignItems="center" sx={{ p: 1.4, bgcolor: "#fff" }}>
+              <TextField
+                fullWidth
+                value={text}
+                disabled={composerDisabled}
+                placeholder={
+                  hardBlocked ? "Сессия заблокирована. Доступен только перезапуск."
+                    : awaiting ? "Ожидаем ответ агента..." : "Введите сообщение..."
+                }
+                onChange={(e) => setText(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") send(); }}
+              />
+              <Stack direction="row" spacing={1} alignItems="center">
+                <Stack direction="row" spacing={0.8} alignItems="center" sx={{ minWidth: 160 }}>
+                  {awaiting && <CircularProgress size={14} thickness={5} />}
+                  <Typography sx={{ fontSize: 12, color: "#6a7388" }}>{stateText}</Typography>
+                </Stack>
+                <Button variant="contained" onClick={send} disabled={composerDisabled}>Отправить</Button>
+                <Button variant="outlined" color="error" onClick={onClose}>Закрыть</Button>
+              </Stack>
+            </Stack>
+            <Typography sx={{ p: "0 14px 12px", fontSize: 11, color: "#7a859d" }}>
+              MVP: строгий turn-taking (один in-flight запрос), блокировка ввода до ответа, timeout/retry сценарии.
+            </Typography>
+          </DialogContent>
+        </Dialog>
+      );
+    }
+
+    function App() {
+      const [tab, setTab] = useState(0);
+      const [agentOpen, setAgentOpen] = useState(false);
+      const [btLink, setBtLink] = useState("");
+
+      const sideStyle = useMemo(() => ({
+        width: 142,
+        bgcolor: "#111721",
+        color: "#c8d2df",
+        py: 1.2,
+        px: 0.6,
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh"
+      }), []);
+
+      return (
+        <ThemeProvider theme={theme}>
+          <CssBaseline />
+          <Box sx={{ display: "grid", gridTemplateColumns: "142px 1fr", minHeight: "100vh" }}>
+            <Box sx={sideStyle}>
+              <List dense disablePadding>
+                {sidebarItems.map((label) => (
+                  <ListItemButton
+                    key={label}
+                    selected={label === "Симуляции"}
+                    sx={{
+                      borderRadius: "3px",
+                      mb: 0.2,
+                      py: 0.5,
+                      color: label === "Симуляции" ? "#77e2c0" : "#c8d2df",
+                      "&.Mui-selected": { bgcolor: "#1b2431" },
+                      "&.Mui-selected:hover": { bgcolor: "#1b2431" }
+                    }}
+                  >
+                    <ListItemText primary={label} primaryTypographyProps={{ fontSize: 13 }} />
+                  </ListItemButton>
+                ))}
+              </List>
+              <Box sx={{ mt: "auto" }}>
+                <List dense disablePadding>
+                  {lowerItems.map((label) => (
+                    <ListItemButton key={label} sx={{ borderRadius: "3px", py: 0.5 }}>
+                      <ListItemText primary={label} primaryTypographyProps={{ fontSize: 12, color: "#b9c4d4" }} />
+                    </ListItemButton>
+                  ))}
+                </List>
+              </Box>
+            </Box>
+
+            <Box>
+              <Box sx={{
+                height: 56, borderBottom: "1px solid #e1e5ec", display: "flex",
+                justifyContent: "flex-end", alignItems: "center", gap: 1.5, px: 2.2, bgcolor: "#f7f8fa"
+              }}>
+                <Paper variant="outlined" sx={{ px: 1.2, py: 0.6, borderRadius: 0.5, borderColor: "#d6dce5", bgcolor: "#fbfcfe" }}>
+                  <Typography sx={{ fontSize: 12, color: "#4f596d" }}>ДРРБ</Typography>
+                </Paper>
+                <Typography sx={{ fontSize: 12, color: "#4f596d" }}>Реутов Иван Николаевич</Typography>
+              </Box>
+
+              <Box sx={{ p: "14px 18px 24px" }}>
+                <Tabs value={tab} onChange={(_, v) => setTab(v)} sx={{ minHeight: 30, mb: 1.6 }}>
+                  <Tab label="☰ Основная информация" sx={{
+                    bgcolor: tab === 0 ? "#fff" : "#f0f2f5",
+                    color: tab === 0 ? "#214f8f !important" : "#6a7488",
+                    border: "1px solid #d6dce5", borderRadius: "4px", minHeight: 30, mr: 1
+                  }} />
+                  <Tab label="☑ Итоги симуляции" sx={{
+                    bgcolor: tab === 1 ? "#fff" : "#f0f2f5",
+                    color: tab === 1 ? "#214f8f !important" : "#6a7488",
+                    border: "1px solid #d6dce5", borderRadius: "4px", minHeight: 30
+                  }} />
+                </Tabs>
+
+                {tab === 0 && (
+                  <Box>
+                    <Stack direction="row" alignItems="center" spacing={1.2} sx={{ mb: 1.4 }}>
+                      <Typography sx={{ fontSize: 38, fontWeight: 650, lineHeight: 1 }}>SIM-CC-11</Typography>
+                      <Chip label="Завершена" size="small" sx={{ bgcolor: "#def2de", color: "#2c7740", fontWeight: 600, borderRadius: "3px" }} />
+                      <Box sx={{ ml: "auto" }}>
+                        <Button variant="contained" onClick={() => setAgentOpen(true)}>Сформировать БТ</Button>
+                      </Box>
+                    </Stack>
+
+                    <StageBar />
+                    <Divider sx={{ mb: 1.8, borderColor: "#e0e5ec" }} />
+
+                    <Paper variant="outlined" sx={{ p: 1.8, mb: 1.4, bgcolor: "#e9edf3", borderColor: "#e1e6ee" }}>
+                      <Typography sx={{ fontSize: 24, fontWeight: 700, color: "#214f8f", mb: 1 }}>⌃ Основная информация</Typography>
+                      <Grid container spacing={1.4}>
+                        <Grid item xs={6}><ReadOnlyField label="Пространство симуляции*" value="Кредитные карты" /></Grid>
+                        <Grid item xs={6}><ReadOnlyField label="Название симуляции*" value="Переход на использование Единого дохода, рассчитанного на Клиентской стратегии." /></Grid>
+                        <Grid item xs={6}><ReadOnlyField label="Режим симуляции*" value="Изменение риск-параметров" /></Grid>
+                        <Grid item xs={6}><ReadOnlyField label="Описание симуляции" value="Переход на использование Единого дохода, рассчитанного на Клиентской стратегии." /></Grid>
+                        <Grid item xs={6}><ReadOnlyField label="Версия сборки стратегии*" value="actual" /></Grid>
+                      </Grid>
+                    </Paper>
+
+                    <Paper variant="outlined" sx={{ p: "12px 14px", mb: 1.4, bgcolor: "#e9edf3", borderColor: "#e1e6ee" }}>
+                      <Typography sx={{ fontSize: 28, color: "#214f8f", fontWeight: 700 }}>⌄ Фильтрация выборки</Typography>
+                    </Paper>
+
+                    <Paper variant="outlined" sx={{ p: 1.8, bgcolor: "#e9edf3", borderColor: "#e1e6ee" }}>
+                      <Typography sx={{ fontSize: 28, fontWeight: 700, color: "#214f8f", mb: 1 }}>⌃ Изменение риск-параметров</Typography>
+                      <Paper variant="outlined" sx={{ p: 1.2, borderRadius: "3px", borderColor: "#d6dde8", bgcolor: "#f8fafc" }}>
+                        <Grid container spacing={1.2}>
+                          <Grid item xs={7}><ReadOnlyField label="Риск-параметр*" value="flg_uni_incf_km_switch" /></Grid>
+                          <Grid item xs={3}><ReadOnlyField label="Дата активации" value="20.04.2026" /></Grid>
+                          <Grid item xs={2}><Button fullWidth variant="outlined" disabled sx={{ mt: 2.2 }}>Удалить</Button></Grid>
+                          <Grid item xs={6}><ReadOnlyField label="Текущее значение(низ)" value="0" /></Grid>
+                          <Grid item xs={6}><ReadOnlyField label="Новое значение(низ)" value="1" /></Grid>
+                        </Grid>
+                      </Paper>
+                    </Paper>
+                  </Box>
+                )}
+
+                {tab === 1 && (
+                  <Box>
+                    <Typography sx={{ fontSize: 38, fontWeight: 700, mb: 1.5 }}>Итоги симуляции SIM-CC-11</Typography>
+                    <Paper variant="outlined" sx={{ p: 1.8, minHeight: 380, bgcolor: "#e9edf3", borderColor: "#e1e6ee" }}>
+                      <Grid container spacing={1.4}>
+                        <Grid item xs={6}>
+                          <Typography sx={{ fontSize: 11, color: "#68748b", mb: 0.3 }}>Ссылка на БТ*</Typography>
+                          <Paper variant="outlined" sx={{ minHeight: 30, px: 1, py: 0.6, borderRadius: "3px", bgcolor: "#f9fafb", borderColor: "#cfd6e1", fontSize: 13 }}>
+                            {btLink ? <a href={btLink} target="_blank" style={{ color: "#1c5cb5" }}>{btLink}</a> : "—"}
+                          </Paper>
+                        </Grid>
+                        <Grid item xs={6}><ReadOnlyField label="Дата и время начала релиза" value="15.04.2026 14:10" /></Grid>
+                        <Grid item xs={12}><ReadOnlyField label="Описание релиза*" value="Переход на использование Единого дохода, рассчитанного на Клиентской стратегии." /></Grid>
+                        <Grid item xs={12}><ReadOnlyField label="Эффекты релиза*" value="Увеличение целевой выборки и оптимизация риск-аппетита." /></Grid>
+                        <Grid item xs={12}><ReadOnlyField label="Описание итогов" value="Симуляция завершена успешно." /></Grid>
+                      </Grid>
+                    </Paper>
+                  </Box>
+                )}
+              </Box>
+            </Box>
+          </Box>
+
+          <AgentDialog
+            open={agentOpen}
+            onClose={() => setAgentOpen(false)}
+            onSaveBtLink={setBtLink}
+          />
+        </ThemeProvider>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById("root")).render(<App />);
   </script>
 </body>
 </html>
