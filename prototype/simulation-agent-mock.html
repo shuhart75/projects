@@ -1,0 +1,730 @@
+<!doctype html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Макет вкладки симуляции + AI-агент</title>
+  <style>
+    :root {
+      --bg: #f5f6f8;
+      --panel: #e9edf3;
+      --input: #f9fafb;
+      --line: #d7dce4;
+      --text: #2f3747;
+      --muted: #69748b;
+      --brand: #214f8f;
+      --brand-soft: #e6eef9;
+      --side: #111721;
+      --side-hover: #1a2330;
+      --success: #3a9146;
+      --danger: #c74a4a;
+      --shadow: 0 2px 10px rgba(21, 32, 58, 0.14);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      color: var(--text);
+      font-family: "Segoe UI", "Liberation Sans", sans-serif;
+      background: var(--bg);
+    }
+
+    .layout {
+      display: grid;
+      grid-template-columns: 142px 1fr;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      background: linear-gradient(180deg, #121923 0%, #0f151f 100%);
+      color: #c8d2df;
+      padding: 12px 6px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+    }
+
+    .side-item {
+      font-size: 13px;
+      border-radius: 3px;
+      padding: 8px 8px;
+      background: transparent;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .side-item:hover { background: var(--side-hover); }
+    .side-item.active { background: #1b2431; color: #77e2c0; }
+    .side-footer { margin-top: auto; font-size: 12px; opacity: 0.8; }
+
+    .main {
+      display: flex;
+      flex-direction: column;
+      min-width: 980px;
+    }
+
+    .topbar {
+      height: 56px;
+      border-bottom: 1px solid #e1e5ec;
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 14px;
+      padding: 0 18px;
+      font-size: 12px;
+      color: #4f596d;
+      background: #f7f8fa;
+    }
+    .top-pill {
+      border: 1px solid #d6dce5;
+      border-radius: 2px;
+      padding: 6px 10px;
+      background: #fbfcfe;
+      min-width: 92px;
+      text-align: center;
+    }
+
+    .content {
+      padding: 14px 18px 24px;
+    }
+
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 14px;
+    }
+    .tab {
+      border: 1px solid #d6dce5;
+      border-radius: 4px;
+      background: #f0f2f5;
+      color: #6a7488;
+      font-size: 13px;
+      padding: 8px 12px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: 0 1px 0 rgba(255, 255, 255, 0.7) inset;
+    }
+    .tab.active {
+      color: var(--brand);
+      background: #fff;
+      box-shadow: var(--shadow);
+    }
+
+    .screen {
+      display: none;
+    }
+    .screen.active { display: block; }
+
+    .headline {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 34px;
+      font-weight: 700;
+      margin: 10px 0 16px;
+    }
+    .headline .id {
+      font-size: 32px;
+      font-weight: 600;
+      letter-spacing: 0.4px;
+    }
+    .badge {
+      font-size: 12px;
+      background: #def2de;
+      color: #2c7740;
+      border-radius: 3px;
+      padding: 4px 9px;
+      font-weight: 600;
+    }
+
+    .agent-actions {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .btn {
+      border: 1px solid transparent;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      padding: 8px 12px;
+    }
+    .btn.primary {
+      background: var(--brand);
+      color: #fff;
+      box-shadow: 0 2px 6px rgba(33, 79, 143, 0.35);
+    }
+    .btn.secondary {
+      border-color: #cfd6e1;
+      background: #fff;
+      color: #4f5b73;
+    }
+    .btn.warn {
+      background: #fff3f3;
+      color: var(--danger);
+      border-color: #f0c9c9;
+    }
+    .btn:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    .stagebar {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 12px;
+      margin: 2px 0 16px;
+      padding-top: 4px;
+    }
+    .stage {
+      font-size: 11px;
+      color: #3f4658;
+      line-height: 1.35;
+      position: relative;
+      padding-top: 24px;
+    }
+    .stage::before {
+      content: "✓";
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--success);
+      color: #fff;
+      font-size: 11px;
+      display: grid;
+      place-items: center;
+      font-weight: 700;
+    }
+    .stage .title {
+      font-weight: 700;
+      display: block;
+      margin-bottom: 2px;
+    }
+    .divider {
+      border-top: 1px solid #e0e5ec;
+      margin: 8px 0 14px;
+    }
+
+    .card {
+      background: var(--panel);
+      border: 1px solid #e1e6ee;
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(25, 35, 56, 0.05);
+    }
+    .card-title {
+      font-weight: 700;
+      color: var(--brand);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px 18px;
+    }
+    .field {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      font-size: 11px;
+      color: var(--muted);
+    }
+    .value {
+      min-height: 26px;
+      border: 1px solid #cfd6e1;
+      border-radius: 3px;
+      background: var(--input);
+      color: #5a6377;
+      padding: 4px 8px;
+      display: flex;
+      align-items: center;
+      font-size: 13px;
+    }
+    .value.link-value a {
+      color: #1c5cb5;
+      text-decoration: none;
+      border-bottom: 1px dashed #1c5cb5;
+    }
+    .value.link-value a:hover { border-bottom-style: solid; }
+
+    .risk-row {
+      border: 1px solid #d6dde8;
+      border-radius: 3px;
+      background: #f8fafc;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 2fr 1fr 80px;
+      gap: 10px;
+      align-items: start;
+    }
+    .risk-sub {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      grid-column: 1 / span 2;
+    }
+
+    .collapsed {
+      height: 46px;
+      display: flex;
+      align-items: center;
+      padding: 0 14px;
+      font-weight: 700;
+      color: var(--brand);
+    }
+
+    .results-title {
+      font-size: 35px;
+      font-weight: 700;
+      margin: 12px 0 14px;
+    }
+
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 22, 34, 0.47);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 20;
+      padding: 24px;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal {
+      width: 860px;
+      max-width: 95vw;
+      background: #fff;
+      border-radius: 12px;
+      box-shadow: 0 16px 40px rgba(19, 28, 44, 0.4);
+      overflow: hidden;
+    }
+    .modal-head {
+      background: #f1f4f9;
+      border-bottom: 1px solid #dde4ef;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 14px;
+      font-weight: 700;
+      color: #334160;
+    }
+    .modal-head .meta {
+      font-size: 12px;
+      color: #6e7a91;
+      font-weight: 500;
+    }
+
+    .chat {
+      height: 360px;
+      overflow: auto;
+      padding: 14px;
+      background: #fafbfc;
+      display: flex;
+      flex-direction: column;
+      gap: 9px;
+    }
+    .msg {
+      max-width: 80%;
+      padding: 9px 10px;
+      border-radius: 10px;
+      line-height: 1.35;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+    .msg.agent {
+      background: #eaf2ff;
+      border: 1px solid #d1e2ff;
+      align-self: flex-start;
+    }
+    .msg.user {
+      background: #eff8ee;
+      border: 1px solid #d7ecd6;
+      align-self: flex-end;
+    }
+    .msg.error {
+      background: #fff0f0;
+      border: 1px solid #f3c9c9;
+      color: #953737;
+      align-self: center;
+      max-width: 92%;
+    }
+
+    .modal-foot {
+      border-top: 1px solid #e1e6ef;
+      padding: 12px 14px;
+      background: #fff;
+      display: grid;
+      grid-template-columns: 1fr auto auto auto;
+      gap: 8px;
+      align-items: center;
+    }
+    .input {
+      border: 1px solid #cfd6e1;
+      border-radius: 5px;
+      min-height: 36px;
+      padding: 8px 10px;
+      outline: none;
+      font-size: 13px;
+      width: 100%;
+    }
+    .state-text {
+      font-size: 12px;
+      color: #6a7388;
+      margin-right: 8px;
+    }
+
+    .tiny {
+      font-size: 11px;
+      color: #7a859d;
+      margin-top: 4px;
+    }
+  </style>
+</head>
+<body>
+  <div class="layout">
+    <aside class="sidebar">
+      <div class="side-item">◷ Пилоты</div>
+      <div class="side-item">⌁ Пересечения</div>
+      <div class="side-item">◌ История изменений</div>
+      <div class="side-item active">⌂ Симуляции</div>
+      <div class="side-item">⌗ Метрики</div>
+      <div class="side-footer">
+        <div class="side-item">◫ База знаний</div>
+        <div class="side-item">? Поддержка</div>
+      </div>
+    </aside>
+
+    <main class="main">
+      <header class="topbar">
+        <div class="top-pill">ДРРБ</div>
+        <div>👤 Реутов Иван Николаевич</div>
+      </header>
+
+      <div class="content">
+        <div class="tabs">
+          <button id="tabMain" class="tab active">☰ Основная информация</button>
+          <button id="tabResults" class="tab">☑ Итоги симуляции</button>
+        </div>
+
+        <section id="screenMain" class="screen active">
+          <div class="headline">
+            <span class="id">SIM-CC-11</span>
+            <span class="badge">Завершена</span>
+            <div class="agent-actions">
+              <button id="btnOpenAgent" class="btn primary">Сформировать БТ</button>
+            </div>
+          </div>
+
+          <div class="stagebar">
+            <div class="stage"><span class="title">Подготовка данных</span>с: 12:05 15.04.2026<br>по: 12:21 15.04.2026</div>
+            <div class="stage"><span class="title">Прогон стратегии на исходных параметрах</span>с: 12:21 15.04.2026<br>по: 13:14 15.04.2026</div>
+            <div class="stage"><span class="title">Прогон стратегии на измененных параметрах</span>с: 13:14 15.04.2026<br>по: 14:00 15.04.2026</div>
+            <div class="stage"><span class="title">Постобработка данных стратегии</span>с: 14:00 15.04.2026<br>по: 14:05 15.04.2026</div>
+            <div class="stage"><span class="title">Агрегация данных для кредитных карт</span>с: 14:05 15.04.2026<br>по: 14:08 15.04.2026</div>
+            <div class="stage"><span class="title">Скачивание агрегатов кредитных карт</span>с: 14:08 15.04.2026<br>по: 14:10 15.04.2026</div>
+            <div class="stage"><span class="title">Формирование отчета</span>с: 14:10 15.04.2026<br>по: 14:11 15.04.2026</div>
+          </div>
+
+          <div class="divider"></div>
+
+          <div class="card">
+            <div class="card-title">⌃ Основная информация</div>
+            <div class="grid-2">
+              <div class="field"><span>Пространство симуляции*</span><div class="value">Кредитные карты</div></div>
+              <div class="field"><span>Название симуляции*</span><div class="value">Переход на использование Единого дохода, рассчитанного на Клиентской стратегии.</div></div>
+              <div class="field"><span>Режим симуляции*</span><div class="value">Изменение риск-параметров</div></div>
+              <div class="field"><span>Описание симуляции</span><div class="value">Переход на использование Единого дохода, рассчитанного на Клиентской стратегии.</div></div>
+              <div class="field"><span>Версия сборки стратегии*</span><div class="value">actual</div></div>
+            </div>
+          </div>
+
+          <div class="card collapsed">⌄ Фильтрация выборки</div>
+          <div class="card">
+            <div class="card-title">⌃ Изменение риск-параметров</div>
+            <div class="risk-row">
+              <div class="field"><span>Риск-параметр*</span><div class="value">flg_uni_incf_km_switch</div></div>
+              <div class="field"><span>Дата активации</span><div class="value">20.04.2026</div></div>
+              <button class="btn secondary" disabled>Удалить</button>
+              <div class="risk-sub">
+                <div class="field"><span>Текущее значение(низ)</span><div class="value">0</div></div>
+                <div class="field"><span>Новое значение(низ)</span><div class="value">1</div></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section id="screenResults" class="screen">
+          <div class="results-title">Итоги симуляции SIM-CC-11</div>
+          <div class="card" style="min-height: 380px;">
+            <div class="grid-2">
+              <div class="field">
+                <span>Ссылка на БТ*</span>
+                <div id="btLinkField" class="value">—</div>
+              </div>
+              <div class="field"><span>Дата и время начала релиза</span><div class="value">15.04.2026 14:10</div></div>
+              <div class="field" style="grid-column: 1 / span 2;"><span>Описание релиза*</span><div class="value">Переход на использование Единого дохода, рассчитанного на Клиентской стратегии.</div></div>
+              <div class="field" style="grid-column: 1 / span 2;"><span>Эффекты релиза*</span><div class="value">Увеличение целевой выборки и оптимизация риск-аппетита.</div></div>
+              <div class="field" style="grid-column: 1 / span 2;"><span>Описание итогов</span><div class="value">Симуляция завершена успешно.</div></div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </main>
+  </div>
+
+  <div id="agentModal" class="modal-backdrop">
+    <div class="modal">
+      <div class="modal-head">
+        <div>Диалог с AI-агентом RAIN</div>
+        <div id="sessionLabel" class="meta">sessionId: not-started</div>
+      </div>
+      <div id="chat" class="chat"></div>
+      <div class="modal-foot">
+        <input id="userInput" class="input" placeholder="Введите сообщение..." />
+        <span id="stateText" class="state-text">Готово</span>
+        <button id="btnRestart" class="btn secondary">Перезапустить сессию</button>
+        <button id="btnSend" class="btn primary">Отправить</button>
+        <button id="btnClose" class="btn warn">Закрыть</button>
+      </div>
+      <div class="tiny" style="padding: 0 14px 12px;">
+        Реализовано в макете: init/continue, проверка существующего БТ, явное подтверждение, retry (до 3), timeout-сценарий, сохранение `btUrl`.
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const tabMain = document.getElementById("tabMain");
+    const tabResults = document.getElementById("tabResults");
+    const screenMain = document.getElementById("screenMain");
+    const screenResults = document.getElementById("screenResults");
+    const btnOpenAgent = document.getElementById("btnOpenAgent");
+    const modal = document.getElementById("agentModal");
+    const chat = document.getElementById("chat");
+    const btnSend = document.getElementById("btnSend");
+    const btnClose = document.getElementById("btnClose");
+    const btnRestart = document.getElementById("btnRestart");
+    const userInput = document.getElementById("userInput");
+    const btLinkField = document.getElementById("btLinkField");
+    const sessionLabel = document.getElementById("sessionLabel");
+    const stateText = document.getElementById("stateText");
+
+    const simulation = {
+      id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+      number: "SIM-CC-11",
+      status: "completed",
+      user: "Реутов Иван Николаевич",
+      product: "Кредитные карты",
+      btExists: false,
+      btUrl: ""
+    };
+
+    let sessionId = "";
+    let retryCounter = 0;
+    let waitingConfirm = false;
+    let waitingMissingData = false;
+    let collected = {
+      businessGoal: "",
+      customer: "",
+      businessEffect: "Увеличение целевой выборки и оптимизация риск-аппетита."
+    };
+
+    function setTab(isMain) {
+      tabMain.classList.toggle("active", isMain);
+      tabResults.classList.toggle("active", !isMain);
+      screenMain.classList.toggle("active", isMain);
+      screenResults.classList.toggle("active", !isMain);
+    }
+
+    tabMain.addEventListener("click", () => setTab(true));
+    tabResults.addEventListener("click", () => setTab(false));
+
+    function uuidLike() {
+      const s4 = () => Math.random().toString(16).slice(2, 6);
+      return `${s4()}${s4()}-${s4()}-${s4()}-${s4()}-${s4()}${s4()}${s4()}`;
+    }
+
+    function addMsg(text, type = "agent") {
+      const div = document.createElement("div");
+      div.className = `msg ${type}`;
+      div.textContent = text;
+      chat.appendChild(div);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function setState(text) {
+      stateText.textContent = text;
+    }
+
+    function makeContextPrompt() {
+      return {
+        simulationId: simulation.id,
+        product: simulation.product,
+        date: new Date().toLocaleDateString("ru-RU"),
+        name: "Изменение Риск-параметров",
+        user: simulation.user,
+        businessEffect: collected.businessEffect,
+        bt: simulation.btExists,
+        riskParam: [{ name: "flg_uni_incf_km_switch", asIs: 0, toBe: 1 }]
+      };
+    }
+
+    function openModal() {
+      modal.classList.add("open");
+      chat.innerHTML = "";
+      startInitSession();
+      userInput.focus();
+    }
+
+    function closeModal() {
+      modal.classList.remove("open");
+    }
+
+    btnOpenAgent.addEventListener("click", openModal);
+    btnClose.addEventListener("click", closeModal);
+
+    function startInitSession(isRestart = false) {
+      sessionId = uuidLike();
+      sessionLabel.textContent = `sessionId: ${sessionId}`;
+      waitingConfirm = false;
+      waitingMissingData = false;
+      retryCounter = 0;
+      setState("Инициализация...");
+
+      if (!isRestart) {
+        addMsg("Инициализируем диалог и отправляем POST /dialog/init ...", "agent");
+      } else {
+        addMsg("Сессия перезапущена. Отправляем новый POST /dialog/init ...", "agent");
+      }
+
+      const payload = makeContextPrompt();
+      window.__lastInitPayload = payload;
+
+      setTimeout(() => {
+        setState("Готово");
+        addMsg(
+          payload.bt
+            ? "Уже найдено ранее созданное БТ. Нужно создать новый документ? (Да/Нет)"
+            : "Нужно создать БТ по завершенной симуляции SIM-CC-11? (Да/Нет)",
+          "agent"
+        );
+      }, 650);
+    }
+
+    btnRestart.addEventListener("click", () => startInitSession(true));
+
+    function simulateRetryableFailure() {
+      setState("Ошибка, retry...");
+      retryCounter += 1;
+      addMsg(`Ошибка HTTP 503. Попытка ${retryCounter} из 3.`, "error");
+      if (retryCounter < 3) {
+        setTimeout(() => {
+          setState("Повторный вызов...");
+          addMsg("Повторный вызов /dialog/continue выполнен успешно.", "agent");
+          setState("Готово");
+        }, 700);
+      } else {
+        addMsg("Все 3 попытки неуспешны. Нажмите «Перезапустить сессию».", "error");
+        setState("Требуется перезапуск");
+      }
+    }
+
+    function finalPreview() {
+      waitingConfirm = true;
+      addMsg(
+        "Сформирован черновик БТ:\n" +
+        "- Дата: " + new Date().toLocaleDateString("ru-RU") + "\n" +
+        "- Наименование: Изменение Риск-параметров\n" +
+        "- Бизнес-цель: " + collected.businessGoal + "\n" +
+        "- Заказчик: " + collected.customer + "\n" +
+        "- Бизнес-эффект: " + collected.businessEffect + "\n" +
+        "- Аналитик: " + simulation.user + "\n" +
+        "- Риск-параметры: flg_uni_incf_km_switch: AS IS=0, TO BE=1\n" +
+        "Подтвердить создание страницы в Confluence? (Да/Нет)"
+      );
+    }
+
+    function processUserAnswer(text) {
+      const normalized = text.trim().toLowerCase();
+      addMsg(text, "user");
+
+      if (normalized === "retry") {
+        simulateRetryableFailure();
+        return;
+      }
+      if (normalized === "timeout") {
+        setState("Таймаут");
+        addMsg("Превышено время ожидания ответа агента. Доступен «Перезапустить сессию».", "error");
+        return;
+      }
+
+      if (!collected.businessGoal || !collected.customer) {
+        if (normalized === "да") {
+          waitingMissingData = true;
+          addMsg("Уточните, пожалуйста: 1) Бизнес-цель 2) Кто заказчик?", "agent");
+          return;
+        }
+        if (normalized === "нет") {
+          addMsg("Диалог завершен без создания БТ.", "agent");
+          setState("Завершено без публикации");
+          return;
+        }
+        if (waitingMissingData && text.includes(";")) {
+          const parts = text.split(";");
+          collected.businessGoal = (parts[0] || "").trim() || "Повышение качества принятия решений";
+          collected.customer = (parts[1] || "").trim() || "ДРРБ";
+          addMsg("Данные получены. Подготавливаю итоговую структуру БТ...", "agent");
+          setTimeout(finalPreview, 600);
+          return;
+        }
+      }
+
+      if (waitingConfirm) {
+        if (normalized === "да") {
+          setState("Публикация...");
+          addMsg("Создаю страницу в Confluence по шаблону «ПРМ КК»...", "agent");
+          setTimeout(() => {
+            simulation.btExists = true;
+            simulation.btUrl = "https://confluence.delta.sbrf.ru/pages/viewpage.action?pageId=19999123456";
+            btLinkField.classList.add("link-value");
+            btLinkField.innerHTML = `<a href="${simulation.btUrl}" target="_blank">${simulation.btUrl}</a>`;
+            addMsg("Готово. btUrl получен и сохранен в поле «Ссылка на БТ».", "agent");
+            setState("БТ создано");
+            waitingConfirm = false;
+          }, 850);
+          return;
+        }
+        if (normalized === "нет") {
+          addMsg("Публикация отменена. Страница не создана.", "agent");
+          setState("Ожидаю корректировки");
+          waitingConfirm = false;
+          return;
+        }
+      }
+
+      addMsg("Не распознал ответ. Используйте: Да/Нет, либо введите `цель; заказчик`.", "error");
+    }
+
+    btnSend.addEventListener("click", () => {
+      const text = userInput.value.trim();
+      if (!text) return;
+      userInput.value = "";
+      processUserAnswer(text);
+    });
+
+    userInput.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") btnSend.click();
+    });
+  </script>
+</body>
+</html>
