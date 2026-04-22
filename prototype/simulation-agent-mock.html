@@ -533,6 +533,8 @@
     let retryCounter = 0;
     let waitingConfirm = false;
     let waitingMissingData = false;
+    let isAwaitingResponse = false;
+    let isHardBlocked = false;
     let collected = {
       businessGoal: "",
       customer: "",
@@ -566,6 +568,40 @@
       stateText.textContent = text;
     }
 
+    function setComposerState() {
+      const disabled = isAwaitingResponse || isHardBlocked;
+      userInput.disabled = disabled;
+      btnSend.disabled = disabled;
+      btnRestart.disabled = isAwaitingResponse;
+      userInput.placeholder = isHardBlocked
+        ? "Сессия заблокирована. Доступен только перезапуск."
+        : isAwaitingResponse
+          ? "Ожидаем ответ агента..."
+          : "Введите сообщение...";
+    }
+
+    function beginAwait(statusText = "Ожидаем ответ агента...") {
+      isAwaitingResponse = true;
+      setState(statusText);
+      setComposerState();
+    }
+
+    function endAwait(statusText = "Готово") {
+      isAwaitingResponse = false;
+      setState(statusText);
+      setComposerState();
+    }
+
+    function hardBlock(statusText = "Требуется перезапуск") {
+      isHardBlocked = true;
+      endAwait(statusText);
+    }
+
+    function clearHardBlock() {
+      isHardBlocked = false;
+      setComposerState();
+    }
+
     function makeContextPrompt() {
       return {
         simulationId: simulation.id,
@@ -583,7 +619,6 @@
       modal.classList.add("open");
       chat.innerHTML = "";
       startInitSession();
-      userInput.focus();
     }
 
     function closeModal() {
@@ -599,7 +634,8 @@
       waitingConfirm = false;
       waitingMissingData = false;
       retryCounter = 0;
-      setState("Инициализация...");
+      clearHardBlock();
+      beginAwait("Инициализация...");
 
       if (!isRestart) {
         addMsg("Инициализируем диалог и отправляем POST /dialog/init ...", "agent");
@@ -611,31 +647,32 @@
       window.__lastInitPayload = payload;
 
       setTimeout(() => {
-        setState("Готово");
+        endAwait("Готово");
         addMsg(
           payload.bt
             ? "Уже найдено ранее созданное БТ. Нужно создать новый документ? (Да/Нет)"
             : "Нужно создать БТ по завершенной симуляции SIM-CC-11? (Да/Нет)",
           "agent"
         );
+        userInput.focus();
       }, 650);
     }
 
     btnRestart.addEventListener("click", () => startInitSession(true));
 
     function simulateRetryableFailure() {
-      setState("Ошибка, retry...");
       retryCounter += 1;
       addMsg(`Ошибка HTTP 503. Попытка ${retryCounter} из 3.`, "error");
       if (retryCounter < 3) {
         setTimeout(() => {
-          setState("Повторный вызов...");
+          beginAwait("Повторный вызов...");
           addMsg("Повторный вызов /dialog/continue выполнен успешно.", "agent");
-          setState("Готово");
+          endAwait("Готово");
+          userInput.focus();
         }, 700);
       } else {
         addMsg("Все 3 попытки неуспешны. Нажмите «Перезапустить сессию».", "error");
-        setState("Требуется перезапуск");
+        hardBlock("Требуется перезапуск");
       }
     }
 
@@ -652,19 +689,19 @@
         "- Риск-параметры: flg_uni_incf_km_switch: AS IS=0, TO BE=1\n" +
         "Подтвердить создание страницы в Confluence? (Да/Нет)"
       );
+      userInput.focus();
     }
 
-    function processUserAnswer(text) {
+    function processAgentTurn(text) {
       const normalized = text.trim().toLowerCase();
-      addMsg(text, "user");
 
       if (normalized === "retry") {
         simulateRetryableFailure();
         return;
       }
       if (normalized === "timeout") {
-        setState("Таймаут");
         addMsg("Превышено время ожидания ответа агента. Доступен «Перезапустить сессию».", "error");
+        hardBlock("Таймаут");
         return;
       }
 
@@ -672,11 +709,13 @@
         if (normalized === "да") {
           waitingMissingData = true;
           addMsg("Уточните, пожалуйста: 1) Бизнес-цель 2) Кто заказчик?", "agent");
+          endAwait("Готово");
+          userInput.focus();
           return;
         }
         if (normalized === "нет") {
           addMsg("Диалог завершен без создания БТ.", "agent");
-          setState("Завершено без публикации");
+          endAwait("Завершено без публикации");
           return;
         }
         if (waitingMissingData && text.includes(";")) {
@@ -684,14 +723,16 @@
           collected.businessGoal = (parts[0] || "").trim() || "Повышение качества принятия решений";
           collected.customer = (parts[1] || "").trim() || "ДРРБ";
           addMsg("Данные получены. Подготавливаю итоговую структуру БТ...", "agent");
-          setTimeout(finalPreview, 600);
+          setTimeout(() => {
+            finalPreview();
+            endAwait("Готово");
+          }, 600);
           return;
         }
       }
 
       if (waitingConfirm) {
         if (normalized === "да") {
-          setState("Публикация...");
           addMsg("Создаю страницу в Confluence по шаблону «ПРМ КК»...", "agent");
           setTimeout(() => {
             simulation.btExists = true;
@@ -699,32 +740,41 @@
             btLinkField.classList.add("link-value");
             btLinkField.innerHTML = `<a href="${simulation.btUrl}" target="_blank">${simulation.btUrl}</a>`;
             addMsg("Готово. btUrl получен и сохранен в поле «Ссылка на БТ».", "agent");
-            setState("БТ создано");
+            endAwait("БТ создано");
             waitingConfirm = false;
+            userInput.focus();
           }, 850);
           return;
         }
         if (normalized === "нет") {
           addMsg("Публикация отменена. Страница не создана.", "agent");
-          setState("Ожидаю корректировки");
+          endAwait("Ожидаю корректировки");
           waitingConfirm = false;
+          userInput.focus();
           return;
         }
       }
 
       addMsg("Не распознал ответ. Используйте: Да/Нет, либо введите `цель; заказчик`.", "error");
+      endAwait("Готово");
+      userInput.focus();
     }
 
     btnSend.addEventListener("click", () => {
+      if (isAwaitingResponse || isHardBlocked) return;
       const text = userInput.value.trim();
       if (!text) return;
       userInput.value = "";
-      processUserAnswer(text);
+      addMsg(text, "user");
+      beginAwait("Ожидаем ответ агента...");
+      setTimeout(() => processAgentTurn(text), 700);
     });
 
     userInput.addEventListener("keydown", (e) => {
       if (e.key === "Enter") btnSend.click();
     });
+
+    setComposerState();
   </script>
 </body>
 </html>
